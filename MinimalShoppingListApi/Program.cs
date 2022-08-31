@@ -10,6 +10,56 @@ builder.Services.AddDbContext<ApiDbContext>(opt => opt.UseInMemoryDatabase("Shop
 
 var app = builder.Build();
 
+// GET: /shoppinglist
+app.MapGet("/shoppinglist", async (ApiDbContext db) =>
+    await db.Groceries.ToListAsync());
+
+// GET: /shoppinglist/1
+app.MapGet("/shoppinglist/{id}", async (int id, ApiDbContext db) =>
+{
+    var grocery = await db.Groceries.FindAsync(id);
+    return grocery == null ? Results.NotFound() : Results.Ok(grocery);
+});
+
+// POST: /shoppinglist
+app.MapPost("/shoppinglist", async (Grocery grocery, ApiDbContext db) =>
+    {
+        db.Groceries.Add(grocery);
+        await db.SaveChangesAsync();
+
+        return Results.Created($"/shoppinglist/{grocery.Id}", grocery);
+    });
+
+// PUT: /shoppinglist/1
+app.MapPut("/shoppinglist/{id}", async (int id, Grocery grocery, ApiDbContext db) =>
+    {
+        var groceryInDb = await db.Groceries.FindAsync(id);
+        if (groceryInDb != null)
+        {
+            groceryInDb.Name = grocery.Name;
+            groceryInDb.Purchased = grocery.Purchased;
+
+            await db.SaveChangesAsync();
+            return Results.Ok(groceryInDb);
+        }
+
+        return Results.NotFound();
+    });
+
+// DELETE: /shoppinglist/1
+app.MapDelete("/shoppinglist/{id}", async (int id, ApiDbContext db) =>
+    {
+        var grocery = await db.Groceries.FindAsync(id);
+        if (grocery == null)
+            return Results.NotFound();
+
+        db.Groceries.Remove(grocery);
+        await db.SaveChangesAsync();
+
+        return Results.NoContent();
+    });
+
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
